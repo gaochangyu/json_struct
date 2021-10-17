@@ -36,9 +36,14 @@ int main(int argc, char **argv) {
     }
     ss.emplace_back(s);
   }
-  auto serializer = magis::atlas::GeoJsonSerialize<Layer>(JS::SerializerOptions(JS::SerializerOptions::Compact));
-  auto json = serializer.serializeFeatureCollection(ss, magis::atlas::GeoJSFeatureType::LINESTRING, "boundary");
-  std::cout<<json<<std::endl;
-  std::ofstream of("/tmp/output.geojson");
-  of<<json;
+
+  auto geojson = magis::atlas::serializeFeatureCollection(ss, magis::atlas::GeoJSFeatureType::LINESTRING, "boundary");
+  std::cout<<"geojson: "<<geojson<<std::endl;
+  std::ofstream geojsonFile("/tmp/result.geojson");
+  geojsonFile<<geojson;
+
+  auto normaljson = JS::serializeStruct(ss, JS::SerializerOptions(JS::SerializerOptions::Compact));
+  std::cout<<"normal json: "<<normaljson<<std::endl;
+  std::ofstream jsonFile("/tmp/result.json");
+  jsonFile<<normaljson;
 }

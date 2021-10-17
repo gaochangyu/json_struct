@@ -78,184 +78,174 @@ enum class GeoJSFeatureType {
   POINT
 };
 
+std::vector<std::string> geoJSFeatureTypeString{"Polygon", "LineString", "Point"};
+
 template <typename T>
-class GeoJsonSerialize
+void serializeGeometry(const T &from_type, GeoJSFeatureType type, JS::Token &token, JS::Serializer &serializer)
 {
-public:
+  token.value_type = JS::Type::ObjectStart;
+  token.value = JS::DataRef("{");
+  serializer.write(token);
 
-  GeoJsonSerialize() : serializeContext(ret_string){}
-  GeoJsonSerialize(const JS::SerializerOptions &options) : serializeContext(ret_string)
-  {
-    serializeContext.serializer.setOptions(options);
-  }
-
-  std::string serializeGeometry(const T &from_type, GeoJSFeatureType type)
-  {
-    token.value_type = JS::Type::ObjectStart;
-    token.value = JS::DataRef("{");
-    serializeContext.serializer.write(token);
-
-    token.name_type = JS::Type::String;
-    token.name = JS::DataRef("coordinates");
-    if (type == GeoJSFeatureType::POLYGON) {
-      token.value_type = JS::Type::ArrayStart;
-      token.value = JS::DataRef("[");
-      serializeContext.serializer.write(token);
-      token.name.size = 0;
-    }
-    if (type == GeoJSFeatureType::POLYGON || type == GeoJSFeatureType::LINESTRING) {
-      token.value_type = JS::Type::ArrayStart;
-      token.value = JS::DataRef("[");
-      serializeContext.serializer.write(token);
-      token.name.size = 0;
-    }
-    for (const auto &point:from_type.geojs_get_geometry())
-    {
-      JS::TypeHandler<decltype(point)>::from(point, token, serializeContext.serializer);
-    }
-    if (type == GeoJSFeatureType::POLYGON || type == GeoJSFeatureType::LINESTRING) {
-      token.value_type = JS::Type::ArrayEnd;
-      token.value = JS::DataRef("]");
-      serializeContext.serializer.write(token);
-      token.name.size = 0;
-    }
-    if (type == GeoJSFeatureType::POLYGON) {
-      token.value_type = JS::Type::ArrayEnd;
-      token.value = JS::DataRef("]");
-      serializeContext.serializer.write(token);
-      token.name.size = 0;
-    }
-
-
-    token.name = JS::DataRef("type");
-    token.name_type = JS::Type::String;
-    token.value = JS::DataRef(geoJSFeatureTypeString[static_cast<size_t>(type)]);
-    token.value_type = JS::Type::String;
-    serializeContext.serializer.write(token);
-
-    token.name.size = 0;
-    token.value_type = JS::Type::ObjectEnd;
-    token.value = JS::DataRef("}");
-    serializeContext.serializer.write(token);
-
-    serializeContext.flush();
-    return ret_string;
-  }
-
-  std::string serializeFeature(const T &from_type, GeoJSFeatureType type)
-  {
-
-    token.value_type = JS::Type::ObjectStart;
-    token.value = JS::DataRef("{");
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("geometry");
-    token.name_type = JS::Type::String;
-
-    serializeGeometry(from_type, type);
-
-    token.name = JS::DataRef("properties");
-    token.name_type = JS::Type::String;
-
-    JS::TypeHandler<T>::from(from_type, token, serializeContext.serializer);
-
-    token.name = JS::DataRef("type");
-    token.name_type = JS::Type::String;
-    token.value = JS::DataRef("Feature");
-    token.value_type = JS::Type::String;
-    serializeContext.serializer.write(token);
-
-    token.name.size = 0;
-    token.value_type = JS::Type::ObjectEnd;
-    token.value = JS::DataRef("}");
-    serializeContext.serializer.write(token);
-
-    serializeContext.flush();
-    return ret_string;
-  }
-
-  std::string serializeFeatureCollection (const std::vector<T> &from_type, GeoJSFeatureType type,
-                                         const std::string &name = "", const std::string &crs = "urn:ogc:def:crs:EPSG::3857")
-  {
-    token.value_type = JS::Type::ObjectStart;
-    token.value = JS::DataRef("{");
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("name");
-    token.name_type = JS::Type::String;
-    token.value = JS::DataRef(name);
-    token.value_type = JS::Type::String;
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("crs");
-    token.name_type = JS::Type::String;
-    token.value_type = JS::Type::ObjectStart;
-    token.value = JS::DataRef("{");
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("type");
-    token.name_type = JS::Type::String;
-    token.value = JS::DataRef("name");
-    token.value_type = JS::Type::String;
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("properties");
-    token.name_type = JS::Type::String;
-    token.value_type = JS::Type::ObjectStart;
-    token.value = JS::DataRef("{");
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("name");
-    token.name_type = JS::Type::String;
-    token.value = JS::DataRef(crs);
-    token.value_type = JS::Type::String;
-    serializeContext.serializer.write(token);
-
-    token.name.size = 0;
-    token.value_type = JS::Type::ObjectEnd;
-    token.value = JS::DataRef("}");
-    serializeContext.serializer.write(token);
-    token.name.size = 0;
-    token.value_type = JS::Type::ObjectEnd;
-    token.value = JS::DataRef("}");
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("features");
-    token.name_type = JS::Type::String;
+  token.name_type = JS::Type::String;
+  token.name = JS::DataRef("coordinates");
+  if (type == GeoJSFeatureType::POLYGON) {
     token.value_type = JS::Type::ArrayStart;
     token.value = JS::DataRef("[");
-    serializeContext.serializer.write(token);
+    serializer.write(token);
     token.name.size = 0;
-    for (const auto &feature:from_type)
-    {
-      serializeFeature(feature, type);
-    }
+  }
+  if (type == GeoJSFeatureType::POLYGON || type == GeoJSFeatureType::LINESTRING) {
+    token.value_type = JS::Type::ArrayStart;
+    token.value = JS::DataRef("[");
+    serializer.write(token);
     token.name.size = 0;
+  }
+  for (const auto &point:from_type.geojs_get_geometry())
+  {
+    JS::TypeHandler<decltype(point)>::from(point, token, serializer);
+  }
+  if (type == GeoJSFeatureType::POLYGON || type == GeoJSFeatureType::LINESTRING) {
     token.value_type = JS::Type::ArrayEnd;
     token.value = JS::DataRef("]");
-    serializeContext.serializer.write(token);
-
-    token.name = JS::DataRef("type");
-    token.name_type = JS::Type::String;
-    token.value = JS::DataRef("FeatureCollection");
-    token.value_type = JS::Type::String;
-    serializeContext.serializer.write(token);
-
+    serializer.write(token);
     token.name.size = 0;
-    token.value_type = JS::Type::ObjectEnd;
-    token.value = JS::DataRef("}");
-    serializeContext.serializer.write(token);
-
-    serializeContext.flush();
-    return ret_string;
   }
-private:
-  const std::vector<std::string> geoJSFeatureTypeString{"Polygon", "LineString", "Point"};
-  std::string ret_string;
-  JS::SerializerContext serializeContext;
-  JS::Token token;
+  if (type == GeoJSFeatureType::POLYGON) {
+    token.value_type = JS::Type::ArrayEnd;
+    token.value = JS::DataRef("]");
+    serializer.write(token);
+    token.name.size = 0;
+  }
 
-};
+
+  token.name = JS::DataRef("type");
+  token.name_type = JS::Type::String;
+  token.value = JS::DataRef(geoJSFeatureTypeString[static_cast<size_t>(type)]);
+  token.value_type = JS::Type::String;
+  serializer.write(token);
+
+  token.name.size = 0;
+  token.value_type = JS::Type::ObjectEnd;
+  token.value = JS::DataRef("}");
+  serializer.write(token);
+}
+
+template <typename T>
+void serializeFeature(const T &from_type, GeoJSFeatureType type, JS::Token &token, JS::Serializer &serializer)
+{
+
+  token.value_type = JS::Type::ObjectStart;
+  token.value = JS::DataRef("{");
+  serializer.write(token);
+
+  token.name = JS::DataRef("geometry");
+  token.name_type = JS::Type::String;
+
+  serializeGeometry(from_type, type, token, serializer);
+
+  token.name = JS::DataRef("properties");
+  token.name_type = JS::Type::String;
+
+  JS::TypeHandler<T>::from(from_type, token, serializer);
+
+  token.name = JS::DataRef("type");
+  token.name_type = JS::Type::String;
+  token.value = JS::DataRef("Feature");
+  token.value_type = JS::Type::String;
+  serializer.write(token);
+
+  token.name.size = 0;
+  token.value_type = JS::Type::ObjectEnd;
+  token.value = JS::DataRef("}");
+  serializer.write(token);
+}
+
+template <typename T>
+std::string serializeFeatureCollection (const std::vector<T> &from_type,
+                                       GeoJSFeatureType type,
+                                       const std::string &name = "",
+                                       const std::string &crs = "urn:ogc:def:crs:EPSG::3857",
+                                       const JS::SerializerOptions &options
+                                        = JS::SerializerOptions(JS::SerializerOptions::Compact))
+{
+
+  std::string ret_string;
+  JS::SerializerContext serializeContext(ret_string);
+  serializeContext.serializer.setOptions(options);
+  JS::Token token;
+  token.value_type = JS::Type::ObjectStart;
+  token.value = JS::DataRef("{");
+  serializeContext.serializer.write(token);
+
+  token.name = JS::DataRef("name");
+  token.name_type = JS::Type::String;
+  token.value = JS::DataRef(name);
+  token.value_type = JS::Type::String;
+  serializeContext.serializer.write(token);
+
+  token.name = JS::DataRef("crs");
+  token.name_type = JS::Type::String;
+  token.value_type = JS::Type::ObjectStart;
+  token.value = JS::DataRef("{");
+  serializeContext.serializer.write(token);
+
+  token.name = JS::DataRef("type");
+  token.name_type = JS::Type::String;
+  token.value = JS::DataRef("name");
+  token.value_type = JS::Type::String;
+  serializeContext.serializer.write(token);
+
+  token.name = JS::DataRef("properties");
+  token.name_type = JS::Type::String;
+  token.value_type = JS::Type::ObjectStart;
+  token.value = JS::DataRef("{");
+  serializeContext.serializer.write(token);
+
+  token.name = JS::DataRef("name");
+  token.name_type = JS::Type::String;
+  token.value = JS::DataRef(crs);
+  token.value_type = JS::Type::String;
+  serializeContext.serializer.write(token);
+
+  token.name.size = 0;
+  token.value_type = JS::Type::ObjectEnd;
+  token.value = JS::DataRef("}");
+  serializeContext.serializer.write(token);
+  token.name.size = 0;
+  token.value_type = JS::Type::ObjectEnd;
+  token.value = JS::DataRef("}");
+  serializeContext.serializer.write(token);
+
+  token.name = JS::DataRef("features");
+  token.name_type = JS::Type::String;
+  token.value_type = JS::Type::ArrayStart;
+  token.value = JS::DataRef("[");
+  serializeContext.serializer.write(token);
+  token.name.size = 0;
+  for (const auto &feature : from_type)
+  {
+    serializeFeature(feature, type, token, serializeContext.serializer);
+  }
+  token.name.size = 0;
+  token.value_type = JS::Type::ArrayEnd;
+  token.value = JS::DataRef("]");
+  serializeContext.serializer.write(token);
+
+  token.name = JS::DataRef("type");
+  token.name_type = JS::Type::String;
+  token.value = JS::DataRef("FeatureCollection");
+  token.value_type = JS::Type::String;
+  serializeContext.serializer.write(token);
+
+  token.name.size = 0;
+  token.value_type = JS::Type::ObjectEnd;
+  token.value = JS::DataRef("}");
+  serializeContext.serializer.write(token);
+  serializeContext.flush();
+  return ret_string;
+}
+
 }
 }
 
