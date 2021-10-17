@@ -1,6 +1,6 @@
 include_directories(${JSON_STRUCT_INCLUDE_DIR})
 
-add_executable(01_simple_struct 01_simple_struct.cpp)
+add_executable(01_simple_struct 01_simple_struct.cpp 14_geojson_struct.cpp)
 add_executable(02_alias 02_alias.cpp)
 add_executable(03_optional_types 03_optional_types.cpp)
 add_executable(04_subclasses 04_subclasses.cpp)
@@ -13,4 +13,5 @@ add_executable(10_simple_tokenize 10_simple_tokenize.cpp)
 add_executable(11_calling_functions 11_calling_functions.cpp)
 add_executable(12_simple_diff 12_simple_diff.cpp)
 add_executable(13_diff_missing_data 13_diff_missing_data.cpp)
+add_executable(14_diff_missing_data 14_geojson_struct.cpp)
 add_executable(reformat reformat.cpp)

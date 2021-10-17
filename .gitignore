@@ -29,3 +29,7 @@ tests/json-tokenizer-partial-test
 tests/json-tree-test
 tests/json-tree-printer-test
 build
+.idea
+cmake-build-debug
+docs
+.vscode
